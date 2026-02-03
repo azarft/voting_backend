@@ -19,9 +19,12 @@ spring:
         format_sql: false
 logging:
   level:
-    org.hibernate: ERROR
+    org.hibernate: OFF
     org.hibernate.SQL: OFF
     org.hibernate.type.descriptor.sql.BasicBinder: OFF
+    org.hibernate.engine.transaction: OFF
+    org.hibernate.tool.schema: OFF
+    org.springframework.orm.jpa: OFF
 
   rabbitmq:
     host: localhost
