@@ -5,7 +5,7 @@ spring:
     name: voting-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/voting_db
+    url: jdbc:postgresql://localhost:5433/voting_db
     username: voting_user
     password: voting_pass
     driver-class-name: org.postgresql.Driver
