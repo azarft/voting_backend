@@ -2,8 +2,6 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: voting-db
-    ports:
-      - "5433:5432"
     environment:
       POSTGRES_DB: voting_db
       POSTGRES_USER: voting_user
@@ -13,13 +11,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - voting-network
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: voting-rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
@@ -28,25 +25,88 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - voting-network
 
-  app:
-    build: .
-    container_name: voting-app
-    ports:
-      - "8080:8080"
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    container_name: auth-service
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/voting_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/voting_db?currentSchema=auth_schema
+      SPRING_DATASOURCE_USERNAME: voting_user
+      SPRING_DATASOURCE_PASSWORD: voting_pass
+      SPRING_MAIL_USERNAME: azanovskiy04@gmail.com
+      SPRING_MAIL_PASSWORD: rnuvpifyeidoqnuc
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    networks:
+      - voting-network
+
+  voting-service:
+    build:
+      context: .
+      dockerfile: voting-service/Dockerfile
+    container_name: voting-service
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    networks:
+      - voting-network
+
+  result-service:
+    build:
+      context: .
+      dockerfile: result-service/Dockerfile
+    container_name: result-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/voting_db?currentSchema=result_schema
       SPRING_DATASOURCE_USERNAME: voting_user
       SPRING_DATASOURCE_PASSWORD: voting_pass
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
-      SPRING_MAIL_HOST: smtp.gmail.com
-      SPRING_MAIL_PORT: 587
-      SPRING_MAIL_USERNAME: azanovskiy04@gmail.com
-      SPRING_MAIL_PASSWORD: epkvdvfubokctlyr
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    networks:
+      - voting-network
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    networks:
+      - voting-network
+
+networks:
+  voting-network:
+    driver: bridge

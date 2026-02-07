@@ -1,0 +1,30 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: result-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/voting_db?currentSchema=result_schema}
+    username: ${SPRING_DATASOURCE_USERNAME:voting_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:voting_pass}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        default_schema: result_schema
+  flyway:
+    enabled: true
+    schemas: result_schema
+    default-schema: result_schema
+    create-schemas: true
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+
+app:
+  rabbitmq:
+    queue: vote.queue

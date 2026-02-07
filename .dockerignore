@@ -1,0 +1,7 @@
+target/
+.git/
+.idea/
+*.iml
+.mvn/wrapper/maven-wrapper.jar
+!**/*.jar
+# Note: we want to keep the mvnw and .mvn/ for the build

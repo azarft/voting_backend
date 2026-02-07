@@ -1,0 +1,39 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+      routes:
+        - id: auth-service
+          uri: http://auth-service:8081
+          predicates:
+            - Path=/auth/**
+        - id: voting-service
+          uri: http://voting-service:8082
+          predicates:
+            - Path=/votes/**
+          filters:
+            - name: JwtAuthenticationFilter
+              args:
+                requiredRole: USER
+        - id: result-service-public
+          uri: http://result-service:8083
+          predicates:
+            - Path=/results/**, /session/active
+        - id: result-service-admin
+          uri: http://result-service:8083
+          predicates:
+            - Path=/admin/**
+          filters:
+            - name: JwtAuthenticationFilter
+              args:
+                requiredRole: ADMIN
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
