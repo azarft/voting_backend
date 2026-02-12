@@ -13,14 +13,10 @@ spring:
           uri: http://auth-service:8081
           predicates:
             - Path=/auth/**
-        - id: voting-service
+        - id: voting-service-public
           uri: http://voting-service:8082
           predicates:
-            - Path=/votes/**
-          filters:
-            - name: JwtAuthenticationFilter
-              args:
-                requiredRole: USER
+            - Path=/polls/**
         - id: result-service-public
           uri: http://result-service:8083
           predicates:

@@ -23,7 +23,7 @@ public class ApplicationConfig {
         return username -> userRepository.findByEmail(username)
                 .map(user -> new org.springframework.security.core.userdetails.User(
                         user.getEmail(),
-                        "",
+                        user.getPassword(),
                         Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
                 ))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
@@ -32,5 +32,10 @@ public class ApplicationConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
+        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
     }
 }

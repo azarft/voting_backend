@@ -13,7 +13,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class VoteEvent implements Serializable {
-    private Long userId;
+    private String deviceId;
+    private String ipAddress;
     private Long sessionId;
     private Long optionId;
     private LocalDateTime timestamp;

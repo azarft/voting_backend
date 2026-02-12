@@ -6,7 +6,5 @@ import lombok.Data;
 @Data
 public class VoteRequest {
     @NotNull
-    private Long sessionId;
-    @NotNull
     private Long optionId;
 }

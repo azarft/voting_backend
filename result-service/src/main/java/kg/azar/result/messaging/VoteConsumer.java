@@ -30,8 +30,8 @@ public class VoteConsumer {
     public void consumeVote(VoteEvent event) {
         log.info("Received vote event: {}", event);
 
-        if (voteRepository.existsByUserIdAndSessionId(event.getUserId(), event.getSessionId())) {
-            log.warn("Duplicate vote detected for user {} in session {}", event.getUserId(), event.getSessionId());
+        if (voteRepository.existsByDeviceIdAndSessionId(event.getDeviceId(), event.getSessionId())) {
+            log.warn("Duplicate vote detected for device {} in session {}", event.getDeviceId(), event.getSessionId());
             return;
         }
 
@@ -49,13 +49,13 @@ public class VoteConsumer {
         }
 
         Vote vote = Vote.builder()
-                .userId(event.getUserId())
+                .deviceId(event.getDeviceId())
                 .session(session)
                 .option(option)
                 .timestamp(event.getTimestamp())
                 .build();
 
         voteRepository.save(vote);
-        log.info("Vote persisted for user {} in session {}", event.getUserId(), event.getSessionId());
+        log.info("Vote persisted for device {} in session {}", event.getDeviceId(), event.getSessionId());
     }
 }

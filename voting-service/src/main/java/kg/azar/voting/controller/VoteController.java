@@ -1,44 +1,49 @@
 package kg.azar.voting.controller;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
 import kg.azar.common.messaging.VoteEvent;
 import kg.azar.voting.dto.VoteRequest;
 import kg.azar.voting.messaging.VoteProducer;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.crypto.SecretKey;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.time.LocalDateTime;
 
 @RestController
-@RequestMapping("/votes")
+@RequestMapping("/polls")
 @RequiredArgsConstructor
 public class VoteController {
 
     private final VoteProducer voteProducer;
+    private final kg.azar.voting.service.RateLimiterService rateLimiterService;
 
-    @Value("${app.jwt.secret}")
-    private String secretKey;
+    @PostMapping("/{id}/vote")
+    public ResponseEntity<Void> submitVote(@PathVariable("id") Long sessionId,
+                                           @RequestBody VoteRequest request,
+                                           @CookieValue(value = "deviceId", required = false) String deviceId,
+                                           HttpServletResponse response,
+                                           HttpServletRequest httpRequest) {
+        if (deviceId == null || deviceId.isBlank()) {
+            deviceId = java.util.UUID.randomUUID().toString();
+            Cookie cookie = new Cookie("deviceId", deviceId);
+            cookie.setHttpOnly(false);
+            cookie.setPath("/");
+            cookie.setMaxAge(60 * 60 * 24 * 365); // 1 year
+            response.addCookie(cookie);
+        }
 
-    @PostMapping
-    public ResponseEntity<Void> submitVote(@RequestBody VoteRequest request, @RequestHeader("Authorization") String token) {
-        String jwt = token.substring(7);
-        Claims claims = Jwts.parser()
-                .verifyWith(getSignInKey())
-                .build()
-                .parseSignedClaims(jwt)
-                .getPayload();
-        
-        Long userId = claims.get("userId", Long.class);
+        String ip = getClientIp(httpRequest);
+        if (!rateLimiterService.allow(ip)) {
+            return ResponseEntity.status(429).build();
+        }
 
         VoteEvent event = VoteEvent.builder()
-                .userId(userId)
-                .sessionId(request.getSessionId())
+                .deviceId(deviceId)
+                .ipAddress(ip)
+                .sessionId(sessionId)
                 .optionId(request.getOptionId())
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -48,8 +53,14 @@ public class VoteController {
         return ResponseEntity.ok().build();
     }
 
-    private SecretKey getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isBlank()) {
+            ip = request.getRemoteAddr();
+        } else {
+            // X-Forwarded-For can contain multiple IPs, use the first one
+            ip = ip.split(",")[0].trim();
+        }
+        return ip;
     }
 }

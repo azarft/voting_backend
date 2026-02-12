@@ -26,19 +26,10 @@ public class AuthController {
     private final UserDetailsService userDetailsService;
 
     @PostMapping("/login")
-    public ResponseEntity<Void> login(@Valid @RequestBody AuthRequest request) {
-        authService.sendVerificationCode(request.getEmail());
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/verify")
-    public ResponseEntity<AuthResponse> verify(@Valid @RequestBody VerifyRequest request) {
-        if (authService.verifyCode(request.getEmail(), request.getCode())) {
-            User user = authService.getUserByEmail(request.getEmail());
-            UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
-            String token = jwtService.generateToken(userDetails, user.getId());
-            return ResponseEntity.ok(AuthResponse.builder().token(token).build());
-        }
-        return ResponseEntity.status(401).build();
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
+        User user = authService.authenticate(request.getEmail(), request.getPassword());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+        String token = jwtService.generateToken(userDetails, user.getId());
+        return ResponseEntity.ok(AuthResponse.builder().token(token).build());
     }
 }

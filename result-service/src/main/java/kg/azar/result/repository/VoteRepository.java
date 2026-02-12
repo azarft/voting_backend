@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface VoteRepository extends JpaRepository<Vote, Long> {
     long countByOptionId(Long optionId);
-    boolean existsByUserIdAndSessionId(Long userId, Long sessionId);
+    boolean existsByDeviceIdAndSessionId(String deviceId, Long sessionId);
 }
